@@ -64,6 +64,31 @@ impl<'a, K> Set<'a, K> {
         }
     }
 
+    /// Reference existing named set for adding/removing elements.
+    ///
+    /// Unlike `new()`, doesn't set ANONYMOUS/CONSTANT flags.
+    /// Use this for pre-existing sets created outside this code.
+    pub fn new_existing(name: &CStr, table: &'a Table, family: ProtoFamily) -> Self
+    where
+        K: SetKey,
+    {
+        let set = try_alloc!(unsafe { sys::nftnl_set_alloc() });
+
+        unsafe {
+            let set = set.as_ptr();
+            sys::nftnl_set_set_u32(set, sys::NFTNL_SET_FAMILY as u16, family as u32);
+            sys::nftnl_set_set_str(set, sys::NFTNL_SET_TABLE as u16, table.get_name().as_ptr());
+            sys::nftnl_set_set_str(set, sys::NFTNL_SET_NAME as u16, name.as_ptr());
+        }
+
+        Set {
+            set,
+            table,
+            family,
+            _marker: ::std::marker::PhantomData,
+        }
+    }
+
     pub fn add(&mut self, key: &K)
     where
         K: SetKey,
