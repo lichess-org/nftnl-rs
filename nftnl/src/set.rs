@@ -68,6 +68,21 @@ impl<'a, K> Set<'a, K> {
     where
         K: SetKey,
     {
+        self.add_with_timeout(key, None)
+    }
+
+    /// Add a key to the set with an optional timeout in milliseconds.
+    ///
+    /// # Arguments
+    /// * `key` - The key to add to the set
+    /// * `timeout_ms` - Optional timeout in milliseconds. If None, element has no timeout.
+    ///
+    /// # Note
+    /// The timeout is in milliseconds as expected by the kernel nftables API.
+    pub fn add_with_timeout(&mut self, key: &K, timeout_ms: Option<u64>)
+    where
+        K: SetKey,
+    {
         unsafe {
             let elem = try_alloc!(sys::nftnl_set_elem_alloc());
 
@@ -80,6 +95,16 @@ impl<'a, K> Set<'a, K> {
                 data.as_ref() as *const _ as *const c_void,
                 data_len,
             );
+
+            if let Some(timeout) = timeout_ms {
+                trace!("Setting timeout {} ms for key {:?}", timeout, data);
+                sys::nftnl_set_elem_set_u64(
+                    elem.as_ptr(),
+                    sys::NFTNL_SET_ELEM_TIMEOUT as u16,
+                    timeout,
+                );
+            }
+
             sys::nftnl_set_elem_add(self.set.as_ptr(), elem.as_ptr());
         }
     }
