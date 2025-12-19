@@ -238,7 +238,9 @@ unsafe impl<K> crate::NlMsg for SetElemsMsg<'_, K> {
         let (type_, flags) = match msg_type {
             MsgType::Add => (
                 libc::NFT_MSG_NEWSETELEM,
-                libc::NLM_F_CREATE | libc::NLM_F_EXCL | libc::NLM_F_ACK,
+                // NLM_F_CREATE without NLM_F_EXCL allows updating existing elements
+                // This is needed for inet tables and timeout updates
+                libc::NLM_F_CREATE | libc::NLM_F_ACK,
             ),
             MsgType::Del => (libc::NFT_MSG_DELSETELEM, libc::NLM_F_ACK),
         };
