@@ -68,6 +68,9 @@ impl<'a, K> Set<'a, K> {
     ///
     /// Unlike `new()`, doesn't set ANONYMOUS/CONSTANT flags.
     /// Use this for pre-existing sets created outside this code.
+    ///
+    /// Note: Does not set NFTNL_SET_FAMILY to avoid conflicts with inet tables.
+    /// The family is stored for netlink message construction but not set as a set attribute.
     pub fn new_existing(name: &CStr, table: &'a Table, family: ProtoFamily) -> Self
     where
         K: SetKey,
@@ -76,7 +79,8 @@ impl<'a, K> Set<'a, K> {
 
         unsafe {
             let set = set.as_ptr();
-            sys::nftnl_set_set_u32(set, sys::NFTNL_SET_FAMILY as u16, family as u32);
+            // Do NOT set NFTNL_SET_FAMILY for existing sets - causes EPROTO with inet tables
+            // sys::nftnl_set_set_u32(set, sys::NFTNL_SET_FAMILY as u16, family as u32);
             sys::nftnl_set_set_str(set, sys::NFTNL_SET_TABLE as u16, table.get_name().as_ptr());
             sys::nftnl_set_set_str(set, sys::NFTNL_SET_NAME as u16, name.as_ptr());
         }
